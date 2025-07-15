@@ -1,0 +1,114 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// User model adapted for Supabase Auth
+/// The id should match Supabase auth.users.id (UUID)
+model User {
+  id        String    @id // This will be Supabase auth.users.id (UUID)
+  email     String    @unique
+  name      String?
+  company   String?
+  phone     String?
+  role      UserRole  @default(BROKER)
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  
+  // Relations remain the same
+  Boat      Boat[]
+  Client    Client[]
+}
+
+model Boat {
+  id          String      @id @default(cuid())
+  userId      String      // References User.id (Supabase UUID)
+  owner       String?
+  brand       String?
+  model       String?
+  size        Int?
+  year        Int?
+  engine      String?
+  engineHours Int?
+  equipment   String?
+  price       String?
+  location    String?
+  description String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  User        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  Client      Client[]
+  BoatFile    BoatFile[]
+  images      BoatImage[] @relation("BoatImages")
+}
+
+model BoatFile {
+  id        String   @id @default(cuid())
+  filename  String
+  url       String
+  size      Int?
+  type      String?
+  createdAt DateTime @default(now())
+  Boat      Boat[]
+}
+
+model BoatImage {
+  id        String   @id @default(cuid())
+  filename  String
+  url       String
+  alt       String?
+  createdAt DateTime @default(now())
+  boatId    String
+  boat      Boat     @relation("BoatImages", fields: [boatId], references: [id], onDelete: Cascade)
+}
+
+model Client {
+  id                String       @id @default(cuid())
+  userId            String       // References User.id (Supabase UUID)
+  name              String?
+  phone             String?
+  email             String?
+  state             String?
+  model             String?
+  year              Int?
+  location          String?
+  equipment         String?
+  value             Int?
+  modelInterest     String?
+  yearInterest      Int?
+  equipmentInterest String?
+  budget            Int?
+  otherInterests    String?
+  firstContact      String?
+  toContact         DateTime?
+  toContactText     String?
+  communication     String?
+  importance        Int?
+  currentBoatId     String?
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+  Boat              Boat?        @relation(fields: [currentBoatId], references: [id])
+  User              User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ClientFile        ClientFile[]
+}
+
+model ClientFile {
+  id        String   @id @default(cuid())
+  filename  String
+  url       String
+  size      Int?
+  type      String?
+  createdAt DateTime @default(now())
+  Client    Client[]
+}
+
+enum UserRole {
+  ADMIN
+  BROKER
+  MANAGER
+}
