@@ -78,7 +78,7 @@ export default function SignUp() {
         router.push('/auth/signin?message=Registration successful! Please sign in.')
       }
 
-    } catch (error) {
+    } catch {
       setError('An error occurred. Please try again.')
     } finally {
       setIsLoading(false)
@@ -181,6 +181,9 @@ export default function SignUp() {
               </p>
             </div>
             
+            {/* Spacing div between header and form */}
+            <div style={{ height: '25px' }}></div>
+            
             <form onSubmit={handleSubmit} className="space-y-6" style={{ width: '400px' }}>
               <div>
                 <label htmlFor="name" className="block text-sm font-semibold mb-4" style={{ color: 'var(--primary-navy)' }}>
@@ -274,6 +277,9 @@ export default function SignUp() {
                 />
               </div>
 
+              {/* Spacing div for better visual separation */}
+              <div style={{ height: '40px' }}></div>
+
               {error && (
                 <div className="rounded-lg p-4" style={{ background: 'var(--error)', color: 'white', width: '400px' }}>
                   <div className="text-sm font-medium">{error}</div>
@@ -325,6 +331,9 @@ export default function SignUp() {
                 </button>
               </div>
 
+              {/* Spacing between Create Account button and Already have account */}
+              <div style={{ height: '15px' }}></div>
+
               <div className="relative my-10">
                 <div className="absolute inset-0 flex items-center">
                   <div style={{ width: '400px', height: '1px', background: 'var(--gray-200)' }}></div>
@@ -333,6 +342,9 @@ export default function SignUp() {
                   <span className="px-6" style={{ background: 'var(--white)', color: 'var(--gray-500)' }}>Already have an account?</span>
                 </div>
               </div>
+
+              {/* Spacing between Already have account text and Sign In button */}
+              <div style={{ height: '15px' }}></div>
 
               <div className="flex justify-center">
                 <Link 

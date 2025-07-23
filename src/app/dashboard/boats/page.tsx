@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import { useAuth } from "@/components/SessionProvider"
 
 interface Boat {
@@ -52,7 +53,7 @@ export default function BoatsPage() {
       }
 
       setBoats(data.boats || [])
-    } catch (error) {
+    } catch {
       setError('An error occurred while fetching boats')
     } finally {
       setIsLoading(false)
@@ -298,14 +299,11 @@ export default function BoatsPage() {
                             border: '1px solid var(--gray-200)',
                             position: 'relative'
                           }}>
-                            <img
+                            <Image
                               src={boat.images[0].url}
                               alt={boat.images[0].alt || 'Boat image'}
-                              style={{
-                                width: '100%',
-                                height: '100%',
-                                objectFit: 'cover'
-                              }}
+                              layout="fill"
+                              objectFit="cover"
                             />
                             {boat.images.length > 1 && (
                               <div style={{

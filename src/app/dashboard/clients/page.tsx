@@ -56,7 +56,7 @@ export default function ClientsPage() {
       }
 
       setClients(data.clients || [])
-    } catch (error) {
+    } catch {
       setError('An error occurred while fetching clients')
     } finally {
       setIsLoading(false)
@@ -135,7 +135,7 @@ export default function ClientsPage() {
       // Refresh clients list
       await fetchClients()
       closeReminderModal()
-    } catch (error) {
+    } catch {
       setError('An error occurred while saving reminder')
     }
   }
@@ -154,7 +154,7 @@ export default function ClientsPage() {
 
       // Refresh clients list
       await fetchClients()
-    } catch (error) {
+    } catch {
       setError('An error occurred while removing reminder')
     }
   }

@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server"
+import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { createServerSupabaseClient } from "@/lib/supabase-server"
 
@@ -12,7 +12,7 @@ interface ReminderClient {
   modelInterest: string | null
 }
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const supabase = await createServerSupabaseClient()
     

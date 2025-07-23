@@ -60,7 +60,7 @@ export default function NewClient() {
       }
 
       router.push('/dashboard/clients')
-    } catch (error) {
+    } catch {
       setError('An error occurred. Please try again.')
       setIsLoading(false)
     }

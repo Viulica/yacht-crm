@@ -26,7 +26,6 @@ interface RemindersData {
 export default function Dashboard() {
   const { user, loading, signOut } = useAuth()
   const router = useRouter()
-  const [currentTime, setCurrentTime] = useState(new Date())
   const [clientCount, setClientCount] = useState(0)
   const [boatCount, setBoatCount] = useState(0)
   const [portfolioValue, setPortfolioValue] = useState(0)
@@ -47,11 +46,6 @@ export default function Dashboard() {
       return
     }
 
-    // Update time every minute
-    const timer = setInterval(() => {
-      setCurrentTime(new Date())
-    }, 60000)
-
     // ✅ PARALLEL DATA FETCHING - even faster!
     Promise.all([
       fetchCounts(),
@@ -59,8 +53,6 @@ export default function Dashboard() {
     ]).catch(error => {
       console.error('Error fetching dashboard data:', error)
     })
-
-    return () => clearInterval(timer)
   }, [user, loading, router])
 
   const fetchCounts = async () => {
@@ -84,7 +76,7 @@ export default function Dashboard() {
         setBoatCount(boats.length)
         
         // Calculate total portfolio value
-        const totalValue = boats.reduce((sum: number, boat: any) => {
+        const totalValue = boats.reduce((sum: number, boat: { price?: string }) => {
           if (boat.price) {
             // Extract number from price string (e.g., "EUR 1250000" -> 1250000)
             const priceMatch = boat.price.match(/[\d,]+/g)
@@ -98,8 +90,8 @@ export default function Dashboard() {
         
         setPortfolioValue(totalValue)
       }
-    } catch (error) {
-      console.error('Error fetching counts:', error)
+    } catch (_error) {
+      console.error('Error fetching counts:', _error)
     }
   }
 
@@ -110,8 +102,8 @@ export default function Dashboard() {
         const data = await response.json()
         setReminders(data.reminders)
       }
-    } catch (error) {
-      console.error('Error fetching reminders:', error)
+    } catch (_error) {
+      console.error('Error fetching reminders:', _error)
     } finally {
       setIsLoadingReminders(false)
     }
@@ -195,16 +187,6 @@ export default function Dashboard() {
   if (!user) {
     return null
   }
-
-  const todayDate = currentTime.toLocaleDateString('en-US', { 
-    weekday: 'long', 
-    year: 'numeric', 
-    month: 'long', 
-    day: 'numeric' 
-  })
-
-  const currentHour = currentTime.getHours()
-  const greeting = currentHour < 12 ? 'Good Morning' : currentHour < 18 ? 'Good Afternoon' : 'Good Evening'
 
   const priorityReminders = getPriorityReminders()
   const totalActiveReminders = reminders.overdue.length + reminders.today.length + reminders.tomorrow.length + reminders.thisWeek.length + reminders.upcoming.length

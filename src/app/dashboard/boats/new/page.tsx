@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import {
   Select,
   SelectContent,
@@ -178,7 +179,7 @@ export default function NewBoat() {
       images.forEach(img => URL.revokeObjectURL(img.preview))
       
       router.push('/dashboard/boats')
-    } catch (error) {
+    } catch {
       setError('An error occurred. Please try again.')
       setIsLoading(false)
     }
@@ -368,14 +369,11 @@ export default function NewBoat() {
                         border: '1px solid var(--gray-200)',
                         position: 'relative'
                       }}>
-                        <img
+                        <Image
                           src={image.preview}
                           alt="Preview"
-                          style={{
-                            width: '100%',
-                            height: '100%',
-                            objectFit: 'cover'
-                          }}
+                          layout="fill"
+                          objectFit="cover"
                         />
                         
                         {/* Upload Progress */}

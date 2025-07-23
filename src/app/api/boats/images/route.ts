@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
     
     try {
       await mkdir(uploadsDir, { recursive: true })
-    } catch (error) {
+    } catch {
       // Directory might already exist, ignore error
     }
 
@@ -72,8 +72,7 @@ export async function POST(request: NextRequest) {
       filename: filename
     })
 
-  } catch (error) {
-    console.error("Error uploading image:", error)
+  } catch {
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

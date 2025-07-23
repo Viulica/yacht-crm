@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma"
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = await createServerSupabaseClient()
@@ -52,8 +52,7 @@ export async function PUT(
       client: updatedClient
     })
 
-  } catch (error) {
-    console.error("Error updating reminder:", error)
+  } catch {
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
@@ -63,7 +62,7 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = await createServerSupabaseClient()
@@ -76,7 +75,7 @@ export async function DELETE(
       )
     }
 
-    const clientId = params.id
+    const { id: clientId } = await params
 
     // Verify client belongs to current user
     const existingClient = await prisma.client.findFirst({
@@ -110,8 +109,7 @@ export async function DELETE(
       client: updatedClient
     })
 
-  } catch (error) {
-    console.error("Error removing reminder:", error)
+  } catch {
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
