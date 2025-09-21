@@ -155,4 +155,67 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     )
   }
+}
+
+export async function PUT(request: NextRequest) {
+  try {
+    const supabase = await createServerSupabaseClient()
+    
+    // Get current user from Supabase Auth
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    
+    if (authError || !user) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      )
+    }
+
+    const { clientId, ...updates } = await request.json()
+
+    if (!clientId) {
+      return NextResponse.json(
+        { error: "Client ID is required" },
+        { status: 400 }
+      )
+    }
+
+    // Verify the client belongs to the current user
+    const existingClient = await prisma.client.findFirst({
+      where: {
+        id: clientId,
+        userId: user.id
+      }
+    })
+
+    if (!existingClient) {
+      return NextResponse.json(
+        { error: "Client not found" },
+        { status: 404 }
+      )
+    }
+
+    // Update the client
+    const updatedClient = await prisma.client.update({
+      where: {
+        id: clientId
+      },
+      data: {
+        ...updates,
+        updatedAt: new Date()
+      }
+    })
+
+    return NextResponse.json({
+      message: "Client updated successfully",
+      client: updatedClient
+    })
+
+  } catch (error) {
+    console.error("Error updating client:", error)
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    )
+  }
 } 

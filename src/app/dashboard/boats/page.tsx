@@ -3,33 +3,105 @@
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import Image from "next/image"
 import { useAuth } from "@/components/SessionProvider"
-
-interface Boat {
-  id: string
-  model: string | null
-  brand: string | null
-  year: number | null
-  size: number | null
-  price: string | null
-  location: string | null
-  description: string | null
-  equipment: string | null
-  images: Array<{
-    id: string
-    url: string
-    alt: string | null
-  }>
-  createdAt: string
-}
+import { useBoats } from "@/hooks/useBoats"
+import { PageHeader, ErrorAlert } from "@/components/shared"
+import { BoatsList, BoatEditModal, BoatFilters } from "@/components/boats"
+import { Boat } from "@/lib/schemas/boat"
 
 export default function BoatsPage() {
   const { user, loading } = useAuth()
   const router = useRouter()
-  const [boats, setBoats] = useState<Boat[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState('')
+  const { boats, isLoading, error, updateBoat } = useBoats()
+
+  const [editModal, setEditModal] = useState<{ isOpen: boolean; boat: Boat | null }>({ isOpen: false, boat: null })
+  const [filteredBoats, setFilteredBoats] = useState<Boat[]>([])
+
+  const openEditModal = (boat: Boat) => {
+    setEditModal({ isOpen: true, boat })
+  }
+
+  const closeEditModal = () => {
+    setEditModal({ isOpen: false, boat: null })
+  }
+
+  const handleFiltersChange = (filters: { location: string; size: string; price: string; brand: string }) => {
+    let filtered = [...boats]
+
+    // Filter by location
+    if (filters.location && filters.location !== 'all') {
+      filtered = filtered.filter(boat => 
+        boat.location?.toLowerCase().includes(filters.location.toLowerCase())
+      )
+    }
+
+    // Filter by size
+    if (filters.size && filters.size !== 'all') {
+      filtered = filtered.filter(boat => {
+        if (!boat.size) return false
+        
+        const size = boat.size
+        switch (filters.size) {
+          case 'under-10':
+            return size < 10
+          case '10-15':
+            return size >= 10 && size < 15
+          case '15-20':
+            return size >= 15 && size < 20
+          case '20-30':
+            return size >= 20 && size < 30
+          case '30-40':
+            return size >= 30 && size < 40
+          case '40-50':
+            return size >= 40 && size < 50
+          case '50-plus':
+            return size >= 50
+          default:
+            return true
+        }
+      })
+    }
+
+    // Filter by price
+    if (filters.price && filters.price !== 'all') {
+      filtered = filtered.filter(boat => {
+        if (!boat.price) return false
+        
+        // Extract numeric value from price string (e.g., "EUR 700000" -> 700000)
+        const priceMatch = boat.price.match(/[\d,]+/)
+        if (!priceMatch) return false
+        
+        const price = parseFloat(priceMatch[0].replace(/,/g, ''))
+        switch (filters.price) {
+          case 'under-100k':
+            return price < 100000
+          case '100k-500k':
+            return price >= 100000 && price < 500000
+          case '500k-1m':
+            return price >= 500000 && price < 1000000
+          case '1m-5m':
+            return price >= 1000000 && price < 5000000
+          case '5m-10m':
+            return price >= 5000000 && price < 10000000
+          case '10m-20m':
+            return price >= 10000000 && price < 20000000
+          case '20m-plus':
+            return price >= 20000000
+          default:
+            return true
+        }
+      })
+    }
+
+    // Filter by brand
+    if (filters.brand && filters.brand !== 'all') {
+      filtered = filtered.filter(boat => 
+        boat.brand?.toLowerCase().includes(filters.brand.toLowerCase())
+      )
+    }
+
+    setFilteredBoats(filtered)
+  }
 
   useEffect(() => {
     if (loading) return
@@ -38,35 +110,12 @@ export default function BoatsPage() {
       router.push("/auth/signin")
       return
     }
-
-    fetchBoats()
   }, [user, loading, router])
 
-  const fetchBoats = async () => {
-    try {
-      const response = await fetch('/api/boats')
-      const data = await response.json()
-
-      if (!response.ok) {
-        setError(data.error || 'Failed to fetch boats')
-        return
-      }
-
-      setBoats(data.boats || [])
-    } catch {
-      setError('An error occurred while fetching boats')
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    })
-  }
+  // Initialize filtered boats when boats data changes
+  useEffect(() => {
+    setFilteredBoats(boats)
+  }, [boats])
 
   if (loading || isLoading) {
     return (
@@ -107,24 +156,64 @@ export default function BoatsPage() {
             </Link>
             
             <div className="text-right">
-              <p style={{
-                fontSize: '15px',
-                fontWeight: '500',
-                color: '#374151',
-                margin: '0 0 8px 0'
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'flex-end',
+                gap: '12px',
+                marginBottom: '8px'
               }}>
-                {user.user_metadata?.name || user.email}
-              </p>
+                {/* Avatar Placeholder */}
+                <div style={{
+                  width: '36px',
+                  height: '36px',
+                  borderRadius: '50%',
+                  background: 'var(--accent-gold)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'var(--primary-navy)',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  flexShrink: 0
+                }}>
+                  {(() => {
+                    const name = user.user_metadata?.name || user.email || '';
+                    const parts = name.split(' ');
+                    if (parts.length >= 2) {
+                      return (parts[0].charAt(0) + parts[1].charAt(0)).toUpperCase();
+                    }
+                    return name.charAt(0).toUpperCase() || 'U';
+                  })()}
+                </div>
+                
+                <p style={{
+                  fontSize: '15px',
+                  fontWeight: '500',
+                  color: '#374151',
+                  margin: 0
+                }}>
+                  {user.user_metadata?.name || user.email}
+                </p>
+              </div>
+              
               <Link 
                 href="/dashboard"
                 style={{
                   color: '#6B7280',
                   textDecoration: 'none',
                   fontSize: '14px',
-                  fontWeight: '500'
+                  fontWeight: '500',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  justifyContent: 'flex-end'
                 }}
               >
-                ← Back to Dashboard
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                Back to Dashboard
               </Link>
             </div>
           </div>
@@ -133,258 +222,34 @@ export default function BoatsPage() {
 
       {/* Main Content */}
       <main className="yacht-container" style={{ paddingTop: '40px', paddingBottom: '40px' }}>
-        {/* Page Header */}
-        <div className="yacht-flex-between mb-8">
-          <div>
-            <h2 style={{ 
-              fontSize: '36px',
-              fontWeight: '700',
-              color: '#1F2937',
-              marginBottom: '6px',
-              letterSpacing: '-0.025em'
-            }}>
-              Boats ({boats.length})
-            </h2>
-            <p style={{ 
-              fontSize: '16px',
-              color: '#6B7280',
-              fontWeight: '400'
-            }}>
-              Manage your <span className="yacht-text-luxury">premium</span> fleet inventory
-            </p>
-          </div>
-          
-          <Link 
-            href="/dashboard/boats/new"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              background: 'var(--accent-gold)',
-              color: 'var(--primary-navy)',
-              border: 'none',
-              borderRadius: '8px',
-              padding: '12px 20px',
-              fontWeight: '600',
-              fontSize: '14px',
-              textDecoration: 'none',
-              transition: 'all 0.2s ease'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'translateY(-1px)'
-              e.currentTarget.style.boxShadow = '0 4px 12px rgba(212, 165, 116, 0.3)'
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'translateY(0)'
-              e.currentTarget.style.boxShadow = 'none'
-            }}
-          >
-            <span style={{ marginRight: '8px' }}>🛥️</span>
-            Add New Boat
-          </Link>
-        </div>
+        <PageHeader
+          title="Boats"
+          subtitle="Manage your premium fleet inventory"
+          count={filteredBoats.length}
+          actionButton={{
+            href: "/dashboard/boats/new",
+            label: "Add New Boat",
+            icon: "🛥️"
+          }}
+        />
 
-        {error && (
-          <div style={{ 
-            background: '#FEF2F2',
-            border: '1px solid #FECACA',
-            borderRadius: '8px',
-            padding: '16px',
-            marginBottom: '24px',
-            color: '#DC2626'
-          }}>
-            <div style={{ fontSize: '14px', fontWeight: '500' }}>{error}</div>
-          </div>
-        )}
+        {error && <ErrorAlert message={error} />}
 
-        {/* Boats List */}
-        <div style={{ 
-          background: 'var(--white)', 
-          borderRadius: '12px', 
-          border: '1px solid var(--gray-200)',
-          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.04)'
-        }}>
-          {boats.length === 0 ? (
-            <div className="text-center py-16" style={{ padding: '48px' }}>
-              <div className="text-6xl mb-6" style={{ opacity: '0.3' }}>🛥️</div>
-              <h3 style={{ 
-                fontSize: '24px',
-                fontWeight: '600',
-                color: '#1F2937',
-                marginBottom: '12px'
-              }}>
-                No boats yet
-              </h3>
-              <p style={{ 
-                fontSize: '16px',
-                color: '#6B7280',
-                marginBottom: '24px'
-              }}>
-                Start building your fleet inventory by adding your first boat
-              </p>
-              <Link 
-                href="/dashboard/boats/new"
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  background: 'var(--white)',
-                  color: 'var(--accent-gold)',
-                  border: '2px solid var(--accent-gold)',
-                  borderRadius: '8px',
-                  padding: '12px 20px',
-                  fontWeight: '600',
-                  fontSize: '14px',
-                  textDecoration: 'none',
-                  transition: 'all 0.2s ease'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = 'var(--accent-gold)'
-                  e.currentTarget.style.color = 'var(--primary-navy)'
-                  e.currentTarget.style.transform = 'translateY(-1px)'
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'var(--white)'
-                  e.currentTarget.style.color = 'var(--accent-gold)'
-                  e.currentTarget.style.transform = 'translateY(0)'
-                }}
-              >
-                <span style={{ marginRight: '8px' }}>🛥️</span>
-                Add Your First Boat
-              </Link>
-            </div>
-          ) : (
-            <div>
-              {/* Table Header */}
-              <div style={{
-                borderBottom: '1px solid var(--gray-200)',
-                padding: '20px 24px',
-                background: '#F9FAFB',
-                borderRadius: '12px 12px 0 0'
-              }}>
-                <div className="grid grid-cols-6 gap-4">
-                  <div style={{ fontWeight: '600', fontSize: '14px', color: '#374151' }}>Image</div>
-                  <div style={{ fontWeight: '600', fontSize: '14px', color: '#374151' }}>Boat</div>
-                  <div style={{ fontWeight: '600', fontSize: '14px', color: '#374151' }}>Details</div>
-                  <div style={{ fontWeight: '600', fontSize: '14px', color: '#374151' }}>Location</div>
-                  <div style={{ fontWeight: '600', fontSize: '14px', color: '#374151' }}>Price</div>
-                  <div style={{ fontWeight: '600', fontSize: '14px', color: '#374151' }}>Added</div>
-                </div>
-              </div>
+        <BoatFilters onFiltersChange={handleFiltersChange} />
 
-              {/* Table Body */}
-              <div>
-                {boats.map((boat, index) => (
-                  <div 
-                    key={boat.id}
-                    style={{
-                      borderBottom: index < boats.length - 1 ? '1px solid var(--gray-200)' : 'none',
-                      padding: '20px 24px',
-                      transition: 'background-color 0.2s ease'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = '#F9FAFB'
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = 'transparent'
-                    }}
-                  >
-                    <div className="grid grid-cols-6 gap-4 items-center">
-                      {/* Boat Image Thumbnail */}
-                      <div>
-                        {boat.images && boat.images.length > 0 ? (
-                          <div style={{
-                            width: '60px',
-                            height: '40px',
-                            borderRadius: '6px',
-                            overflow: 'hidden',
-                            border: '1px solid var(--gray-200)',
-                            position: 'relative'
-                          }}>
-                            <Image
-                              src={boat.images[0].url}
-                              alt={boat.images[0].alt || 'Boat image'}
-                              layout="fill"
-                              objectFit="cover"
-                            />
-                            {boat.images.length > 1 && (
-                              <div style={{
-                                position: 'absolute',
-                                bottom: '2px',
-                                right: '2px',
-                                background: 'rgba(0, 0, 0, 0.7)',
-                                color: 'white',
-                                fontSize: '10px',
-                                padding: '1px 4px',
-                                borderRadius: '2px'
-                              }}>
-                                +{boat.images.length - 1}
-                              </div>
-                            )}
-                          </div>
-                        ) : (
-                          <div style={{
-                            width: '60px',
-                            height: '40px',
-                            borderRadius: '6px',
-                            border: '1px solid var(--gray-200)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            background: '#F9FAFB',
-                            fontSize: '16px',
-                            opacity: '0.4'
-                          }}>
-                            🛥️
-                          </div>
-                        )}
-                      </div>
+        <BoatsList 
+          boats={boats}
+          filteredBoats={filteredBoats}
+          isLoading={isLoading} 
+          onEditBoat={openEditModal}
+        />
 
-                      {/* Boat Name */}
-                      <div>
-                        <div style={{ fontWeight: '600', fontSize: '15px', color: '#1F2937', marginBottom: '4px' }}>
-                          {boat.model || 'Unnamed Boat'}
-                        </div>
-                        {boat.brand && (
-                          <div style={{ fontSize: '13px', color: '#6B7280' }}>
-                            {boat.brand}
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Details */}
-                      <div>
-                        {boat.year && (
-                          <div style={{ fontSize: '14px', color: '#1F2937', marginBottom: '2px' }}>
-                            {boat.year}
-                          </div>
-                        )}
-                        {boat.size && (
-                          <div style={{ fontSize: '13px', color: '#6B7280' }}>
-                            {boat.size}m
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Location */}
-                      <div style={{ fontSize: '14px', color: '#1F2937' }}>
-                        {boat.location || '-'}
-                      </div>
-
-                      {/* Price */}
-                      <div style={{ fontSize: '14px', fontWeight: '500', color: 'var(--accent-gold)' }}>
-                        {boat.price || 'Price on request'}
-                      </div>
-
-                      {/* Date Added */}
-                      <div style={{ fontSize: '13px', color: '#6B7280' }}>
-                        {formatDate(boat.createdAt)}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
+        <BoatEditModal
+          isOpen={editModal.isOpen}
+          boat={editModal.boat}
+          onClose={closeEditModal}
+          onSave={updateBoat}
+        />
       </main>
     </div>
   )

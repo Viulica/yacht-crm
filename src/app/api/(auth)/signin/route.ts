@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from "next/server"
-import { supabase } from "@/lib/supabase"
+import { createServerSupabaseClientForAPI } from "@/lib/supabase-server"
 import { prisma } from "@/lib/prisma"
 
 export async function POST(request: NextRequest) {
   try {
     const { email, password } = await request.json()
 
-    // Validation
     if (!email || !password) {
       return NextResponse.json(
         { error: "Email and password are required" },
@@ -14,8 +13,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Use standard Supabase client for authentication
-    // supabase provjerava credentials u auth.users i ako je validno generira JWT token unutar authData
+    const supabase = await createServerSupabaseClientForAPI()
+    
     const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
       email,
       password
@@ -36,7 +35,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Get user data from our custom User table using Prisma
     let userData = null
     try {
       userData = await prisma.user.findUnique({
@@ -52,10 +50,8 @@ export async function POST(request: NextRequest) {
       })
     } catch (userError) {
       console.error("User data fetch error:", userError)
-      // Continue without userData - use auth metadata instead
     }
 
-    // Create response with session data for client-side storage
     const response = NextResponse.json({
       message: "Signed in successfully",
       user: userData || {
@@ -74,24 +70,7 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    // Set session cookies for server-side API routes
-    response.cookies.set('sb-access-token', authData.session.access_token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: authData.session.expires_in,
-      path: '/'
-    })
-
-    response.cookies.set('sb-refresh-token', authData.session.refresh_token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 30, // 30 days
-      path: '/'
-    })
-
-    console.log('✅ Signin successful for:', authData.user.email)
+    console.log('Signin successful for:', authData.user.email)
     return response
 
   } catch (error) {
@@ -101,4 +80,5 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     )
   }
-} 
+}
+

@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js'
+import { createBrowserClient } from '@supabase/ssr'
 
 const isServer = typeof window === 'undefined'
 
@@ -31,12 +31,12 @@ if (isServer && !supabaseServiceKey) {
   console.warn('⚠️ Missing SUPABASE_SERVICE_ROLE_KEY environment variable - admin functions will not work')
 }
 
-// Client-side Supabase client (browser) - can be used in Client Components
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+// Client-side Supabase client (browser) - uses SSR package for proper cookie handling
+export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey)
 
 // Admin Supabase client for server-side operations (bypasses RLS) - only use in API routes/Server Components
 export const supabaseAdmin = supabaseServiceKey 
-  ? createClient(supabaseUrl, supabaseServiceKey, {
+  ? createBrowserClient(supabaseUrl, supabaseServiceKey, {
       auth: {
         autoRefreshToken: false,
         persistSession: false

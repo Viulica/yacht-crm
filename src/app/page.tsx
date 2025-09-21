@@ -9,19 +9,17 @@ export default function Home() {
   const router = useRouter()
 
   useEffect(() => {
-    // Don't redirect while still loading
     if (loading) {
-      console.log('🔄 Auth still loading, waiting...')
+      console.log('Auth still loading, waiting...')
       return
     }
 
-    // Small delay to ensure session is fully loaded
     const redirectTimer = setTimeout(() => {
       if (user) {
-        console.log('✅ User authenticated, redirecting to dashboard:', user.email)
+        console.log('User authenticated, redirecting to dashboard:', user.email)
         router.push("/dashboard")
       } else {
-        console.log('❌ No authenticated user, redirecting to signin')
+        console.log('No authenticated user, redirecting to signin')
         router.push("/auth/signin")
       }
     }, 100)
@@ -29,7 +27,6 @@ export default function Home() {
     return () => clearTimeout(redirectTimer)
   }, [user, loading, router])
 
-  // Show loading while determining auth state
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -41,7 +38,6 @@ export default function Home() {
     )
   }
 
-  // Show loading while redirecting
   return (
     <div className="min-h-screen flex items-center justify-center">
       <div className="text-center">

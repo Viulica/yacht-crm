@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { supabase } from '@/lib/supabase'
 
 export default function SignIn() {
   const [email, setEmail] = useState('')
@@ -13,87 +12,85 @@ export default function SignIn() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    // ✅ PREVENT DOUBLE SUBMISSION
     if (isLoading) return
     
     setIsLoading(true)
     setError('')
 
-    console.log('🔐 Starting signin process...')
-
     try {
-      // Sign in with Supabase Auth via server endpoint
-      const response = await fetch('/api/auth/supabase/signin', {
+      const response = await fetch('/api/signin', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
       })
 
-      console.log('📡 Response status:', response.status)
       const data = await response.json()
-      console.log('📄 Response data:', data)
 
       if (!response.ok) {
-        console.log('❌ Signin failed:', data.error)
+        console.log('Signin failed:', data.error)
         setError(data.error || 'Invalid email or password')
-        setIsLoading(false) // ✅ Re-enable form on error
+        setIsLoading(false)
       } else {
-        console.log('✅ Signin successful, setting client session...')
+        console.log('Signin successful:', data.user.email)
         
-        // Set the session in client-side Supabase
-        const { error: sessionError } = await supabase.auth.setSession({
-          access_token: data.session.access_token,
-          refresh_token: data.session.refresh_token
-        })
-        
-        if (sessionError) {
-          console.error('❌ Failed to set client session:', sessionError)
-          setError('Failed to establish session. Please try again.')
-          setIsLoading(false) // ✅ Re-enable form on error
-        } else {
-          console.log('✅ Client session set successfully, redirecting immediately...')
-          
-          // ✅ IMMEDIATE redirect - no timeout needed
+        setTimeout(() => {
+          console.log('Redirecting to dashboard...')
           window.location.href = '/dashboard'
-        }
+        }, 500)
       }
     } catch (error) {
-      console.error('🚨 Signin error:', error)
+      console.error('Signin error:', error)
       setError('An error occurred. Please try again.')
-      setIsLoading(false) // ✅ Re-enable form on error
+      setIsLoading(false) 
     }
-    // ✅ DON'T set isLoading false here - let redirect handle it
   }
 
   return (
-    <div className="min-h-screen" style={{ background: 'var(--off-white)' }}>
-      {/* Full Width Container */}
-      <div className="min-h-screen flex items-center justify-center">
-        {/* Full Width Main Card */}
-        <div className="w-full min-h-screen flex flex-col justify-center" style={{ background: 'var(--white)', boxShadow: 'var(--shadow-luxury)' }}>
-          {/* Centered Content Container */}
-          <div className="flex flex-col items-center px-8 py-16">
-            {/* Logo & Header */}
-            <div className="text-center mb-20">
-              <div className="yacht-float inline-block mb-8">
-                <div className="text-6xl">⚓</div>
-              </div>
-              <h1 className="yacht-heading-lg mb-4">
-                Welcome Back
-              </h1>
-              <p className="text-lg" style={{ color: 'var(--gray-600)' }}>
-                Sign in to your <span className="yacht-text-luxury">exclusive</span> yacht brokerage account
-              </p>
-            </div>
-            
-            {/* Spacer */}
-            <div style={{ height: '30px' }}></div>
-            
-            <form onSubmit={handleSubmit} className="space-y-8" style={{ width: '400px' }}>
-              {/* ✅ DISABLE ALL INPUTS WHEN LOADING */}
-              <fieldset disabled={isLoading} style={{ border: 'none', padding: 0, margin: 0 }}>
+    <div className="min-h-screen flex">
+      {/* Left Side - Yacht Image */}
+      <div className="hidden lg:flex lg:w-1/2 relative">
+        <div 
+          className="w-full h-full bg-cover bg-center bg-no-repeat"
+          style={{
+            backgroundImage: 'url(https://yachtharbour.com/static/uploads/2321_de701.jpg)'
+          }}
+        >
+          {/* Overlay for better text readability */}
+          <div className="absolute inset-0 bg-black bg-opacity-20"></div>
+          
+          
+          {/* Bottom text overlay */}
+          <div className="absolute bottom-8 left-8 right-8">
+            <h2 className="text-4xl font-bold text-white mb-4">
+              Luxury Yacht Management
+            </h2>
+            <p className="text-xl text-white opacity-90">
+              Professional brokerage solutions for the world's finest vessels
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Right Side - Sign In Form */}
+      <div className="w-full lg:w-1/2 flex items-center justify-center px-8 py-12" style={{ background: 'var(--white)' }}>
+        <div className="w-full max-w-md">
+
+          {/* Header */}
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold mb-2" style={{ color: 'var(--primary-navy)' }}>
+              Welcome Back
+            </h1>
+            <p className="text-gray-600">
+              Sign in to your <span className="yacht-text-luxury">exclusive</span> yacht brokerage account
+            </p>
+          </div>
+          
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <fieldset disabled={isLoading} style={{ border: 'none', padding: 0, margin: 0 }}>
               <div>
-                <label htmlFor="email" className="block text-sm font-semibold mb-4" style={{ color: 'var(--primary-navy)' }}>
+                <label htmlFor="email" className="block text-sm font-semibold mb-2" style={{ color: 'var(--primary-navy)' }}>
                   Email Address
                 </label>
                 <input
@@ -104,21 +101,17 @@ export default function SignIn() {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-opacity-50 focus:outline-none transition-all duration-200"
                   style={{
-                    width: '400px',
                     background: 'var(--white)',
-                    border: '2px solid var(--gray-200)',
-                    borderRadius: '12px',
-                    padding: '16px 20px',
+                    borderColor: 'var(--gray-200)',
                     fontSize: '16px',
-                    fontWeight: '400',
-                    transition: 'all 0.3s ease'
+                    fontWeight: '400'
                   }}
                   placeholder="Enter your email address"
                   onFocus={(e) => {
                     e.target.style.borderColor = 'var(--accent-gold)'
                     e.target.style.boxShadow = '0 0 0 3px rgba(212, 165, 116, 0.1)'
-                    e.target.style.outline = 'none'
                   }}
                   onBlur={(e) => {
                     e.target.style.borderColor = 'var(--gray-200)'
@@ -128,7 +121,7 @@ export default function SignIn() {
               </div>
               
               <div>
-                <label htmlFor="password" className="block text-sm font-semibold mb-4" style={{ color: 'var(--primary-navy)' }}>
+                <label htmlFor="password" className="block text-sm font-semibold mb-2" style={{ color: 'var(--primary-navy)' }}>
                   Password
                 </label>
                 <input
@@ -139,21 +132,17 @@ export default function SignIn() {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-opacity-50 focus:outline-none transition-all duration-200"
                   style={{
-                    width: '400px',
                     background: 'var(--white)',
-                    border: '2px solid var(--gray-200)',
-                    borderRadius: '12px',
-                    padding: '16px 20px',
+                    borderColor: 'var(--gray-200)',
                     fontSize: '16px',
-                    fontWeight: '400',
-                    transition: 'all 0.3s ease'
+                    fontWeight: '400'
                   }}
                   placeholder="Enter your password"
                   onFocus={(e) => {
                     e.target.style.borderColor = 'var(--accent-gold)'
                     e.target.style.boxShadow = '0 0 0 3px rgba(212, 165, 116, 0.1)'
-                    e.target.style.outline = 'none'
                   }}
                   onBlur={(e) => {
                     e.target.style.borderColor = 'var(--gray-200)'
@@ -163,44 +152,39 @@ export default function SignIn() {
               </div>
 
               {error && (
-                <div className="rounded-lg p-4" style={{ background: 'var(--error)', color: 'white', width: '400px' }}>
+                <div className="rounded-lg p-4" style={{ background: 'var(--error)', color: 'white' }}>
                   <div className="text-sm font-medium">{error}</div>
                 </div>
               )}
 
-              <div className="pt-12">
+              <div className="pt-4">
                 <button
                   type="submit"
                   disabled={isLoading}
+                  className="w-full py-3 px-4 rounded-lg font-semibold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                   style={{ 
-                    width: '400px',
-                    background: 'var(--white)',
+                    background: 'var(--accent-gold)',
                     color: 'var(--primary-navy)',
-                    border: 'none',
-                    borderRadius: '8px',
-                    padding: '14px 24px',
-                    fontWeight: '500',
-                    fontSize: '15px',
-                    cursor: isLoading ? 'not-allowed' : 'pointer',
-                    transition: 'all 0.2s ease',
-                    letterSpacing: '0.3px'
+                    fontSize: '16px'
                   }}
                   onMouseEnter={(e) => {
                     if (!isLoading) {
-                      e.currentTarget.style.background = 'var(--gray-50)'
-                      e.currentTarget.style.transform = 'translateY(-0.5px)'
+                      e.currentTarget.style.background = 'var(--primary-navy)'
+                      e.currentTarget.style.color = 'white'
+                      e.currentTarget.style.transform = 'translateY(-1px)'
                     }
                   }}
                   onMouseLeave={(e) => {
                     if (!isLoading) {
-                      e.currentTarget.style.background = 'var(--white)'
+                      e.currentTarget.style.background = 'var(--accent-gold)'
+                      e.currentTarget.style.color = 'var(--primary-navy)'
                       e.currentTarget.style.transform = 'translateY(0)'
                     }
                   }}
                 >
                   {isLoading ? (
                     <div className="flex items-center justify-center">
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600 mr-2"></div>
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-current mr-2"></div>
                       Signing in...
                     </div>
                   ) : (
@@ -209,37 +193,29 @@ export default function SignIn() {
                 </button>
               </div>
 
-              <div className="relative my-12">
+              <div className="relative my-6">
                 <div className="absolute inset-0 flex items-center">
-                  <div style={{ width: '400px', height: '1px', background: 'var(--gray-200)' }}></div>
+                  <div className="w-full border-t border-gray-200"></div>
                 </div>
                 <div className="relative flex justify-center text-sm">
-                  <span className="px-6" style={{ background: 'var(--white)', color: 'var(--gray-500)' }}>New to Yacht CRM?</span>
+                  <span className="px-4 bg-white text-gray-500">New to Yacht CRM?</span>
                 </div>
               </div>
 
               <Link 
                 href="/auth/signup" 
+                className="block w-full py-3 px-4 text-center rounded-lg font-semibold transition-all duration-200 border"
                 style={{ 
-                  display: 'block',
-                  width: '400px',
-                  textAlign: 'center',
-                  textDecoration: 'none',
                   background: 'var(--white)',
                   color: 'var(--primary-navy)',
-                  border: '1px solid var(--accent-gold)',
-                  borderRadius: '8px',
-                  padding: '10px 18px',
-                  fontWeight: '500',
-                  fontSize: '14px',
-                  transition: 'all 0.2s ease',
-                  letterSpacing: '0.2px'
+                  borderColor: 'var(--accent-gold)',
+                  fontSize: '16px'
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.background = 'var(--accent-gold)'
                   e.currentTarget.style.borderColor = 'var(--accent-gold)'
                   e.currentTarget.style.color = 'var(--primary-navy)'
-                  e.currentTarget.style.transform = 'translateY(-0.5px)'
+                  e.currentTarget.style.transform = 'translateY(-1px)'
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.background = 'var(--white)'
@@ -251,14 +227,13 @@ export default function SignIn() {
                 Create Broker Account
               </Link>
             </fieldset>
-            </form>
+          </form>
 
-            {/* Subtitle */}
-            <div className="text-center mt-8">
-              <p className="text-sm yacht-text-luxury">
-                Professional Yacht Brokerage Management
-              </p>
-            </div>
+          {/* Footer */}
+          <div className="text-center mt-8">
+            <p className="text-sm yacht-text-luxury">
+              Professional Yacht Brokerage Management
+            </p>
           </div>
         </div>
       </div>

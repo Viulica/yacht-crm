@@ -48,49 +48,8 @@ export async function GET() {
       }
     })
 
-    // Categorize reminders
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    const tomorrow = new Date(today)
-    tomorrow.setDate(tomorrow.getDate() + 1)
-    const nextWeek = new Date(today)
-    nextWeek.setDate(nextWeek.getDate() + 7)
-
-    const categorizedReminders: {
-      overdue: ReminderClient[]
-      today: ReminderClient[]
-      tomorrow: ReminderClient[]
-      thisWeek: ReminderClient[]
-      upcoming: ReminderClient[]
-    } = {
-      overdue: [],
-      today: [],
-      tomorrow: [],
-      thisWeek: [],
-      upcoming: []
-    }
-
-    clients.forEach(client => {
-      if (!client.toContact) return
-
-      const reminderDate = new Date(client.toContact)
-      reminderDate.setHours(0, 0, 0, 0)
-
-      if (reminderDate < today) {
-        categorizedReminders.overdue.push(client)
-      } else if (reminderDate.getTime() === today.getTime()) {
-        categorizedReminders.today.push(client)
-      } else if (reminderDate.getTime() === tomorrow.getTime()) {
-        categorizedReminders.tomorrow.push(client)
-      } else if (reminderDate <= nextWeek) {
-        categorizedReminders.thisWeek.push(client)
-      } else {
-        categorizedReminders.upcoming.push(client)
-      }
-    })
-
     return NextResponse.json({
-      reminders: categorizedReminders,
+      reminders: clients,
       total: clients.length
     })
 

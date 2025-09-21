@@ -4,13 +4,31 @@ import { cookies } from 'next/headers'
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
-// Server-side Supabase client for API routes with user context
+// Server-side Supabase client for server components (read-only)
 export const createServerSupabaseClient = async () => {
   const cookieStore = await cookies()
 
-  // Get session from our custom cookies
-  const accessToken = cookieStore.get('sb-access-token')?.value
-  const refreshToken = cookieStore.get('sb-refresh-token')?.value
+  const supabase = createServerClient(
+    supabaseUrl,
+    supabaseAnonKey,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll()
+        },
+        setAll() {
+          // No-op for server components - cookies can't be modified here
+        },
+      },
+    }
+  )
+
+  return supabase
+}
+
+// Server-side Supabase client for API routes (can modify cookies)
+export const createServerSupabaseClientForAPI = async () => {
+  const cookieStore = await cookies()
 
   const supabase = createServerClient(
     supabaseUrl,
@@ -28,18 +46,6 @@ export const createServerSupabaseClient = async () => {
       },
     }
   )
-
-  // If we have session tokens, set them
-  if (accessToken && refreshToken) {
-    try {
-      await supabase.auth.setSession({
-        access_token: accessToken,
-        refresh_token: refreshToken
-      })
-    } catch (error) {
-      console.error('Failed to set session from cookies:', error)
-    }
-  }
 
   return supabase
 } 
